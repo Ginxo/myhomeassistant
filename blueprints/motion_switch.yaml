@@ -38,6 +38,12 @@ blueprint:
           unit_of_measurement: seconds
           step: 1.0
           mode: slider
+    condition:
+      name: Add Condition(s) to run this Automation
+      description: Add conditions if needed to run this automation at all. Note, if conditions return `false`, no actions will fire.
+      default: []
+      selector:
+        condition: {}          
 mode: restart
 max_exceeded: silent
 triggers:
@@ -46,17 +52,20 @@ triggers:
   from: 'off'
   to: 'on'
 actions:
-- alias: Turn on the light
-  action: switch.turn_on
-  target: !input switch_target
-- alias: Wait until there is no motion from device
-  wait_for_trigger:
-    trigger: state
-    entity_id: !input motion_entity
-    from: 'on'
-    to: 'off'
-- alias: Wait the number of seconds that has been set
-  delay: !input no_motion_wait
-- alias: Turn off the light
-  action: switch.turn_off
-  target: !input switch_target
+- if:
+  - condition: !input condition
+  then:
+  - alias: Turn on the light
+    action: switch.turn_on
+    target: !input switch_target
+  - alias: Wait until there is no motion from device
+    wait_for_trigger:
+      trigger: state
+      entity_id: !input motion_entity
+      from: 'on'
+      to: 'off'
+  - alias: Wait the number of seconds that has been set
+    delay: !input no_motion_wait
+  - alias: Turn off the light
+    action: switch.turn_off
+    target: !input switch_target
