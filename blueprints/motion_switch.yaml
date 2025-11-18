@@ -2,7 +2,7 @@ blueprint:
   name: Motion-activated Switch with posible conditions
   description: Turn on a switch when motion is detected.
   domain: automation
-  source_url: https://github.com/Ginxo/myhomeassistant/blueprints/motion_light.yaml
+  source_url: https://github.com/Ginxo/myhomeassistant/blob/main/blueprints/motion_switch.yaml
   author: Enrique Mingorance
   input:
     motion_entity:
@@ -10,14 +10,14 @@ blueprint:
       selector:
         entity:
           filter:
-          - device_class:
-            - occupancy
-            domain:
-            - binary_sensor
-          - device_class:
-            - motion
-            domain:
-            - binary_sensor
+            - device_class:
+                - occupancy
+              domain:
+                - binary_sensor
+            - device_class:
+                - motion
+              domain:
+                - binary_sensor
           reorder: false
           multiple: false
     switch_target:
@@ -25,8 +25,23 @@ blueprint:
       selector:
         target:
           entity:
-          - domain:
-            - switch
+            - domain:
+                - switch
+    additional_actions:
+      name: Actions
+      description: Additional actions to be triggered when motion is detected
+      default: []
+      selector:
+        action:
+    switch_off:
+      name: Switch off
+      description: Additional switches to turn off
+      default: {}
+      selector:
+        target:
+          entity:
+            - domain:
+                - switch
     no_motion_wait:
       name: Wait time
       description: Time to leave the light on after last motion is detected.
@@ -40,32 +55,38 @@ blueprint:
           mode: slider
     condition:
       name: Add Condition(s) to run this Automation
-      description: Add conditions if needed to run this automation at all. Note, if conditions return `false`, no actions will fire.
+      description:
+        Add conditions if needed to run this automation at all. Note, if
+        conditions return `false`, no actions will fire.
       default: []
       selector:
-        condition: {}          
+        condition: {}
 mode: restart
 max_exceeded: silent
 triggers:
   trigger: state
   entity_id: !input motion_entity
-  from: 'off'
-  to: 'on'
+  from: "off"
+  to: "on"
 actions:
-- if:
-  - condition: !input condition
-  then:
-  - alias: Turn on the light
-    action: switch.turn_on
-    target: !input switch_target
-  - alias: Wait until there is no motion from device
-    wait_for_trigger:
-      trigger: state
-      entity_id: !input motion_entity
-      from: 'on'
-      to: 'off'
-  - alias: Wait the number of seconds that has been set
-    delay: !input no_motion_wait
-  - alias: Turn off the light
-    action: switch.turn_off
-    target: !input switch_target
+  - if:
+      - condition: !input condition
+    then:
+      - alias: Turn on the switch
+        action: switch.turn_on
+        target: !input switch_target
+      - sequence: !input additional_actions
+      - alias: Wait until there is no motion from device
+        wait_for_trigger:
+          trigger: state
+          entity_id: !input motion_entity
+          from: "on"
+          to: "off"
+      - alias: Wait the number of seconds that has been set
+        delay: !input no_motion_wait
+      - alias: Turn off the switch
+        action: switch.turn_off
+        target: !input switch_target
+      - alias: Turn off the additional switch
+        action: switch.turn_off
+        target: !input switch_off
