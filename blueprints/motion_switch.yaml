@@ -95,4 +95,5 @@ actions:
   - alias: Turn off the additional switch
     action: switch.turn_off
     target: !input switch_off
+    continue_on_error: true
   - sequence: !input additional_actions_after
