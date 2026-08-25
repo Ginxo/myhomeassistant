@@ -68,6 +68,11 @@ blueprint:
         condition: {}
 mode: restart
 max_exceeded: silent
+
+variables:
+  # Capturamos el input en una variable para poder leerlo con la plantilla de Home Assistant
+  switch_off_target: !input switch_off
+
 triggers:
   trigger: state
   entity_id: !input motion_entity
@@ -92,8 +97,17 @@ actions:
   - alias: Turn off the switch
     action: switch.turn_off
     target: !input switch_target
-  - alias: Turn off the additional switch
-    action: switch.turn_off
-    target: !input switch_off
-    continue_on_error: true
+  
+  # Solo ejecuta el apagado secundario si hay alguna entidad, dispositivo o área configurada
+  - if:
+      - condition: template
+        value_template: >
+          {{ switch_off_target.entity_id | default([]) | length > 0 or 
+             switch_off_target.device_id | default([]) | length > 0 or 
+             switch_off_target.area_id | default([]) | length > 0 }}
+    then:
+      - alias: Turn off the additional switch
+        action: switch.turn_off
+        target: !input switch_off
+        
   - sequence: !input additional_actions_after
